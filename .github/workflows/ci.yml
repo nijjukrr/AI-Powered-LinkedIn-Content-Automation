@@ -1,0 +1,32 @@
+name: Workflow Quality & Security CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate workflow and example JSON syntax
+        run: |
+          python -m json.tool workflows/linkedin_content_automation.json > /dev/null
+          python -m json.tool examples/sample-topic-output.json > /dev/null
+          python -m json.tool examples/sample-post-output.json > /dev/null
+          python -m json.tool examples/sample-hashtag-output.json > /dev/null
+
+      - name: Run automated workflow, schema, security, and link tests
+        run: python -m unittest discover -s tests -v
