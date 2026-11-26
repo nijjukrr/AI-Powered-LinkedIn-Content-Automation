@@ -1,5 +1,5 @@
 {
-  "name": "Automated LinkedIn content creation with GPT-4 and DALL-E for scheduled posts",
+  "name": "AI-Powered LinkedIn Content Automation",
   "nodes": [
     {
       "parameters": {
@@ -172,7 +172,7 @@
         "text": "=Generate relevant LinkedIn hashtags for the following post.\n\n<post_title>{{ $json.output['post title'] }}</post_title>\n<post_content>{{ $json.output['post content'] }}</post_content>\n\nPlease generate:\n1. 3-5 broad industry hashtags (e.g., #SoftwareEngineering, #TechCareers, #ArtificialIntelligence)\n2. 3-5 niche-specific hashtags directly relevant to the post topic (e.g., #StudentPortfolio, #CampusPlacements, #InternshipTips)\n3. 1-2 broader topical hashtags (e.g., #EarlyCareer, #TechStudents)\n\nReturn ONLY the required JSON structure.",
         "hasOutputParser": true,
         "options": {
-          "systemMessage": "You are an SEO specialist for LinkedIn. Your task is to generate highly relevant and effective hashtags for LinkedIn posts. Consider the post's content, target audience, and current LinkedIn trends to maximize visibility and engagement."
+          "systemMessage": "You are an SEO specialist for LinkedIn. Your task is to generate highly relevant and effective hashtags for LinkedIn posts based on the post's content and target audience to maximize discoverability."
         }
       },
       "id": "f3901b98-cfe4-4d48-9e35-59161cbcfdd9",
@@ -293,7 +293,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const creatorOutput = $('Content creator').item.json.output || {};\nconst rawTitle = String(creatorOutput['post title'] || '').trim();\nconst rawContent = String(creatorOutput['post content'] || '').trim();\n\nif (!rawTitle || !rawContent) {\n  throw new Error('Validation failed: post title or post content is empty.');\n}\n\nif (!$binary || !$binary.data) {\n  throw new Error('Validation failed: missing binary image data (binary.data) from Gemini Image Generator.');\n}\n\nconst cleanBody = rawContent\n  .split('\\n')\n  .filter((line) => !line.trim().startsWith('#'))\n  .join('\\n')\n  .trim();\n\nconst rawHashtags = Array.isArray($json.output?.Hashtags) ? $json.output.Hashtags : [];\nconst seen = new Set();\nconst normalizedHashtags = [];\n\nfor (const entry of rawHashtags) {\n  const parts = String(entry || '').split(/[,\\s]+/);\n  for (let tag of parts) {\n    tag = tag.trim().replace(/^#+/, '').replace(/[^a-zA-Z0-9_]/g, '');\n    if (!tag) continue;\n    const formatted = '#' + tag;\n    const lower = formatted.toLowerCase();\n    if (!seen.has(lower)) {\n      seen.add(lower);\n      normalizedHashtags.push(formatted);\n    }\n  }\n}\n\nconst formattedText = normalizedHashtags.length > 0\n  ? cleanBody + '\\n\\n' + normalizedHashtags.join(' ')\n  : cleanBody;\n\nreturn [{\n  json: {\n    formattedTitle: rawTitle,\n    formattedText,\n    normalizedHashtags\n  },\n  binary: $binary\n}];"
+        "jsCode": "const items = $input.all();\nif (!items || items.length !== 1) {\n  throw new Error(`Validation failed: expected exactly 1 merged item from parallel branches, received ${items ? items.length : 0}.`);\n}\n\nconst creatorOutput = $('Content creator').item.json.output || {};\nconst rawTitle = String(creatorOutput['post title'] || '').trim();\nconst rawContent = String(creatorOutput['post content'] || '').trim();\n\nif (!rawTitle) {\n  throw new Error('Validation failed: post title is empty or missing.');\n}\n\nif (!rawContent) {\n  throw new Error('Validation failed: post content is empty or missing.');\n}\n\nconst binaryKeys = Object.keys($binary || {});\nconst imageKey = $binary?.data ? 'data' : binaryKeys[0];\nif (!imageKey || !$binary[imageKey]) {\n  throw new Error('Validation failed: missing binary image data in item.binary from Gemini Image Generator.');\n}\n\nconst cleanBody = rawContent\n  .split('\\n')\n  .filter((line) => !line.trim().startsWith('#'))\n  .join('\\n')\n  .trim();\n\nconst rawHashtags = Array.isArray($json.output?.Hashtags) ? $json.output.Hashtags : [];\nconst seen = new Set();\nconst normalizedHashtags = [];\n\nfor (const entry of rawHashtags) {\n  const parts = String(entry || '').split(/[,\\s]+/);\n  for (let tag of parts) {\n    tag = tag.trim().replace(/^#+/, '').replace(/[^a-zA-Z0-9_]/g, '');\n    if (!tag) continue;\n    const formatted = '#' + tag;\n    const lower = formatted.toLowerCase();\n    if (!seen.has(lower)) {\n      seen.add(lower);\n      normalizedHashtags.push(formatted);\n    }\n  }\n}\n\nconst formattedText = normalizedHashtags.length > 0\n  ? cleanBody + '\\n\\n' + normalizedHashtags.join(' ')\n  : cleanBody;\n\nreturn [{\n  json: {\n    formattedTitle: rawTitle,\n    formattedText,\n    normalizedHashtags\n  },\n  binary: {\n    data: $binary[imageKey]\n  }\n}];"
       },
       "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
       "name": "Validate & Format Post",
