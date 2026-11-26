@@ -8,6 +8,7 @@ Usage:
 import json
 import pathlib
 import re
+import subprocess
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -57,12 +58,17 @@ class TestWorkflowStructure(unittest.TestCase):
             cls.wf = json.load(f)
         cls.nodes_by_name = {n["name"]: n for n in cls.wf["nodes"]}
 
-    def test_01_workflow_json_valid_and_inactive(self):
+    def test_01_workflow_json_valid_name_and_inactive(self):
         self.assertIsInstance(self.wf, dict)
+        self.assertEqual(
+            self.wf.get("name"),
+            "AI-Powered LinkedIn Content Automation",
+            "Workflow name must match project identity",
+        )
         self.assertFalse(self.wf.get("active"), "Public workflow must be inactive by default")
         self.assertEqual(self.wf.get("settings", {}).get("binaryMode"), "separate")
 
-    def test_02_required_nodes_exist_and_unique(self):
+    def test_02_all_15_nodes_exist_and_unique(self):
         expected_nodes = {
             "Schedule Trigger",
             "Content topic generator2",
@@ -81,6 +87,7 @@ class TestWorkflowStructure(unittest.TestCase):
             "Notify on Telegram",
         }
         actual_names = [n["name"] for n in self.wf["nodes"]]
+        self.assertEqual(len(actual_names), 15, "Workflow must contain exactly 15 nodes")
         self.assertEqual(len(actual_names), len(set(actual_names)), "Node names must be unique")
         self.assertTrue(expected_nodes.issubset(set(actual_names)))
 
@@ -97,7 +104,7 @@ class TestWorkflowStructure(unittest.TestCase):
                             f"Unknown target node: {edge['node']}",
                         )
 
-        # Verify Merge -> Validate & Format Post -> LinkedIn -> Notify on Telegram
+        # Verify execution topology: Merge -> Validate & Format Post -> LinkedIn -> Notify on Telegram
         self.assertEqual(
             connections["Merge"]["main"][0][0]["node"], "Validate & Format Post"
         )
@@ -122,7 +129,7 @@ class TestWorkflowStructure(unittest.TestCase):
         )
         self.assertEqual(li["parameters"]["additionalFields"]["visibility"], "CONNECTIONS")
         self.assertEqual(li["parameters"].get("binaryPropertyName"), "data")
-        self.assertFalse(li.get("retryOnFail", False))
+        self.assertFalse(li.get("retryOnFail", False), "LinkedIn node must not retry blindly")
 
         self.assertEqual(tg["parameters"]["chatId"], "YOUR_TELEGRAM_CHAT_ID")
         self.assertEqual(tg["webhookId"], "YOUR_TELEGRAM_WEBHOOK_ID")
@@ -132,21 +139,39 @@ class TestWorkflowStructure(unittest.TestCase):
         self.assertEqual(self.wf["meta"]["instanceId"], "YOUR_N8N_INSTANCE_ID")
         self.assertEqual(self.wf["id"], "YOUR_WORKFLOW_ID")
 
-    def test_06_structured_output_parser2_schema_clean(self):
+    def test_06_retry_settings_distinction(self):
+        gemini = self.nodes_by_name["Gemini Image Generator"]
+        self.assertTrue(gemini.get("retryOnFail"), "Gemini should retry transient failures")
+        self.assertEqual(gemini.get("maxTries"), 2)
+        self.assertEqual(gemini.get("waitBetweenTries"), 3000)
+
+        linkedin = self.nodes_by_name["LinkedIn"]
+        self.assertFalse(linkedin.get("retryOnFail", False), "LinkedIn must not retry")
+
+    def test_07_structured_output_parser2_schema_clean(self):
         parser2 = self.nodes_by_name["Structured Output Parser2"]
         schema = json.loads(parser2["parameters"]["jsonSchemaExample"])
         self.assertEqual(list(schema.keys()), ["Hashtags"])
         self.assertIsInstance(schema["Hashtags"], list)
 
-    def test_07_binary_validation_in_code_node(self):
+    def test_08_no_live_trend_claims_in_prompts(self):
+        seo_node = self.nodes_by_name["Hashtag generator /SEO"]
+        system_msg = seo_node["parameters"].get("options", {}).get("systemMessage", "")
+        prompt_text = seo_node["parameters"].get("text", "")
+        self.assertNotIn("current LinkedIn trends", system_msg)
+        self.assertNotIn("trending/topical hashtags", prompt_text)
+
+    def test_09_code_node_validates_input_items_and_binary(self):
         code_node = self.nodes_by_name["Validate & Format Post"]
         js = code_node["parameters"]["jsCode"]
-        self.assertIn("$binary.data", js)
-        self.assertIn("binary: $binary", js)
+        self.assertIn("$input.all()", js)
+        self.assertIn("items.length !== 1", js)
+        self.assertIn("missing binary image data", js)
+        self.assertIn("data: $binary[imageKey]", js)
 
 
 class TestExamplesAndHelpers(unittest.TestCase):
-    def test_08_example_outputs_match_schemas(self):
+    def test_10_example_outputs_match_schemas(self):
         with open(ROOT / "examples" / "sample-topic-output.json", encoding="utf-8") as f:
             topic = json.load(f)
         self.assertIsInstance(topic["output"], list)
@@ -163,7 +188,7 @@ class TestExamplesAndHelpers(unittest.TestCase):
         self.assertEqual(list(tags["output"].keys()), ["Hashtags"])
         self.assertIsInstance(tags["output"]["Hashtags"], list)
 
-    def test_09_hashtag_normalization_and_deduplication(self):
+    def test_11_hashtag_normalization_and_deduplication(self):
         raw = ["#AI, ai", "  #LinkedIn! ", "", "###Tech_2026", "#tech_2026", "Software"]
         self.assertEqual(
             normalize_hashtags(raw),
@@ -171,7 +196,7 @@ class TestExamplesAndHelpers(unittest.TestCase):
         )
         self.assertEqual(normalize_hashtags(None), [])
 
-    def test_10_html_escaping_and_url_construction(self):
+    def test_12_html_escaping_and_url_construction(self):
         self.assertEqual(
             escape_telegram_html("AI & ML <2026>"),
             "AI &amp; ML &lt;2026&gt;",
@@ -185,7 +210,7 @@ class TestExamplesAndHelpers(unittest.TestCase):
             "Check your LinkedIn profile for the post.",
         )
 
-    def test_11_documentation_links_and_secret_scan(self):
+    def test_13_documentation_links_and_secret_scan(self):
         link_re = re.compile(r"\[[^\]]+\]\(([^)#]+)(?:#[^)]+)?\)")
         for md in ROOT.rglob("*.md"):
             text = md.read_text(encoding="utf-8")
@@ -210,6 +235,20 @@ class TestExamplesAndHelpers(unittest.TestCase):
                         pattern.search(content),
                         f"Potential secret pattern matched in {p}",
                     )
+
+    def test_14_nodejs_native_tests_pass(self):
+        """Run the direct Node.js unit tests on validate_format_post.js."""
+        res = subprocess.run(
+            ["node", "--test", "tests/test_validate_post.test.js"],
+            cwd=str(ROOT),
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(
+            res.returncode,
+            0,
+            f"Node.js unit tests failed:\nSTDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}",
+        )
 
 
 if __name__ == "__main__":
