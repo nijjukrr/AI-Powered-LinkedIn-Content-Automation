@@ -73,10 +73,13 @@ Open your browser to `http://localhost:5678`.
 
 ## Step 5: Testing Checklist (Safe Dry Run)
 
-Before turning the workflow **Active**:
+The imported workflow is **inactive (`active: false`)** and sets LinkedIn visibility to **`CONNECTIONS`** by default so you never publish test posts publicly by accident.
 
-1. **Disable or disconnect `LinkedIn`** temporarily (or change `additionalFields.visibility` to `CONNECTIONS`) so test runs do not publish publicly.
-2. Click **Execute Workflow** manually.
+1. **Run Offline Automated Tests Locally:**
+   ```bash
+   python -m unittest discover -s tests -v
+   ```
+2. **Disable `LinkedIn` Temporarily** (optional for initial dry runs) and click **Execute Workflow** manually in n8n.
 3. Inspect each node's output in the n8n execution panel:
    - `Content topic generator2`: Verify `output` is an array of objects with `title`, `rationale`, `hook`.
    - `Content creator`: Verify `output` has `post title`, `post content` (no `#hashtags`), and `image description`.

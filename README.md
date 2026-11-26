@@ -6,6 +6,7 @@
 [![LinkedIn API](https://img.shields.io/badge/LinkedIn-OAuth2%20Publishing-0A66C2?logo=linkedin&logoColor=white)](https://learn.microsoft.com/en-us/linkedin/)
 [![Telegram](https://img.shields.io/badge/Telegram-Bot%20Alerts-26A5E4?logo=telegram&logoColor=white)](https://core.telegram.org/bots/api)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CI](https://github.com/nijjukrr/AI-Powered-LinkedIn-Content-Automation/actions/workflows/ci.yml/badge.svg)](https://github.com/nijjukrr/AI-Powered-LinkedIn-Content-Automation/actions/workflows/ci.yml)
 
 > An end-to-end, multi-agent n8n automation pipeline that researches student- and early-career-focused LinkedIn topics, writes structured post copy, generates custom realistic visuals via Google Gemini, optimizes SEO hashtags in parallel, publishes to LinkedIn, and sends instant Telegram delivery alerts.
 
@@ -38,7 +39,7 @@
 
 ## 1. Project Introduction
 
-**AI-Powered LinkedIn Content Automation** is a 14-node, multi-stage [n8n](https://n8n.io/) workflow designed to automate the complete lifecycle of a LinkedIn post—from topic ideation to copywriting, image generation, SEO hashtag optimization, publishing, and notification.
+**AI-Powered LinkedIn Content Automation** is a 15-node, multi-stage [n8n](https://n8n.io/) workflow designed to automate the complete lifecycle of a LinkedIn post—from topic ideation to copywriting, image generation, SEO hashtag optimization, deterministic validation, publishing, and notification.
 
 Unlike monolithic single-prompt scripts, this project decomposes content creation into specialized AI agents and LangChain chains connected via **Structured Output Parsers**. This ensures deterministic JSON contracts between stages, enables parallel execution for visual and SEO asset generation, and cleanly assembles the final payload for the LinkedIn OAuth2 API.
 
@@ -127,10 +128,11 @@ flowchart TB
     CC --> GIG["Gemini Image Generator<br/>(gemini-3.1-flash-image)"]
     CC --> HG["Hashtag generator /SEO<br/>(LangChain Agent v3.1)"]
 
-    %% Merge and Publish
+    %% Merge, Validate, and Publish
     GIG -->|"Input 0 (Image Binary)"| MRG["Merge<br/>(combineByPosition)"]
     HG -->|"Input 1 (Hashtags JSON)"| MRG
-    MRG --> LI["LinkedIn<br/>(OAuth2 Image Post)"]
+    MRG --> VAL["Validate &amp; Format Post<br/>(Code Node v2)"]
+    VAL --> LI["LinkedIn<br/>(OAuth2 Image Post)"]
     LI --> TG["Notify on Telegram<br/>(HTML Alert)"]
 
     %% Supporting AI Model & Parser Connections
@@ -157,8 +159,9 @@ For a layer-by-layer breakdown (implemented vs. proposed), see [`docs/system-arc
    - **Branch A (`Gemini Image Generator`):** Sends `image description` to `models/gemini-3.1-flash-image` to generate a realistic LinkedIn image.
    - **Branch B (`Hashtag generator /SEO`):** Sends `post title` and `post content` to `gpt-5.4` to generate 3–5 broad, 3–5 niche, and 1–2 trending hashtags.
 5. **Merge:** `Merge` waits for both parallel branches and combines item 0 from Branch A with item 0 from Branch B by position (`combineByPosition`).
-6. **LinkedIn Publishing:** `LinkedIn` pulls `post title` and `post content` from `$('Content creator').item.json.output`, strips any stray `#` lines, deduplicates `$json.output.Hashtags`, and publishes an `IMAGE` post publicly.
-7. **Telegram Notification:** `Notify on Telegram` escapes HTML characters in the title, constructs the LinkedIn post URL from `$json.urn`, and sends a timestamped IST message.
+6. **Validation & Formatting:** `Validate & Format Post` verifies non-empty title/content, verifies `binary.data` exists, strips any stray `#` lines from the body, and normalizes/deduplicates hashtags case-insensitively.
+7. **LinkedIn Publishing:** `LinkedIn` publishes the validated `formattedText`, `formattedTitle`, and `binary.data` image (`visibility: CONNECTIONS` by default for safe testing).
+8. **Telegram Notification:** `Notify on Telegram` checks `$json.urn`, escapes HTML characters in the title, and sends a timestamped IST message (or a warning if no URN was returned).
 
 ---
 
@@ -178,8 +181,9 @@ For a layer-by-layer breakdown (implemented vs. proposed), see [`docs/system-arc
 | 10 | **OpenAI Chat Model2** | `lmChatOpenAi` | Language model (`gpt-5.4`) backing `Hashtag generator /SEO`. |
 | 11 | **Structured Output Parser2** | `outputParserStructured` | Enforces `{ "post title", "post content", "image description", "Hashtags": [...] }`. |
 | 12 | **Merge** | `merge` | Combines the Gemini image output (index 0) and Hashtag JSON (index 1) by position. |
-| 13 | **LinkedIn** | `linkedIn` | Formats text + deduplicated hashtags and publishes an `IMAGE` post via OAuth2. |
-| 14 | **Notify on Telegram** | `telegram` | Sends an HTML-formatted confirmation with post URN and IST timestamp. |
+| 13 | **Validate & Format Post** | `code` | Validates title, body, and `binary.data`; normalizes and deduplicates hashtags. |
+| 14 | **LinkedIn** | `linkedIn` | Publishes the validated `IMAGE` post via OAuth2 (`CONNECTIONS` by default). |
+| 15 | **Notify on Telegram** | `telegram` | Sends an HTML-formatted confirmation (or missing-URN warning) with IST timestamp. |
 
 For complete input/output schemas, expressions, and internal mechanics, see [`docs/workflow-explanation.md`](docs/workflow-explanation.md).
 
@@ -267,20 +271,22 @@ Visual documentation and workflow/execution screenshot guidelines are located in
 
 ## 16. Testing and Verification Instructions
 
-Before activating the `Schedule Trigger` in production:
+### Offline Automated Tests (No API Credentials Required)
 
-1. **Validate JSON Syntax:**
-   ```bash
-   python -m json.tool workflows/linkedin_content_automation.json > /dev/null
-   ```
-2. **Test Node-by-Node in n8n:**
-   - Pin or disable the `LinkedIn` node (or set `visibility: CONNECTIONS`) during initial dry runs so you do not publish test posts publicly.
-   - Click **Execute Workflow** manually from the n8n canvas.
-   - Verify `Content topic generator2` returns a non-empty JSON array with `title`, `rationale`, and `hook`.
-   - Verify `Content creator` returns `post title`, `post content` (without hashtags), and `image description`.
-   - Verify `Gemini Image Generator` outputs a binary image property and `Hashtag generator /SEO` outputs a `Hashtags` array.
-   - Verify `Merge` combines both inputs into a single item.
-   - Re-enable `LinkedIn` and verify the published post + `Notify on Telegram` alert.
+```bash
+python -m unittest discover -s tests -v
+```
+
+This suite validates workflow JSON syntax, all 15 required nodes, connections, inactive default (`active: false`), safe LinkedIn visibility (`CONNECTIONS`), cleaned schemas, hashtag normalization/deduplication, HTML escaping, missing-URN/binary handling, documentation links, and secret scanning.
+
+### Manual n8n Verification (Requires Live Credentials)
+
+> **Status:** Live end-to-end API execution is **UNVERIFIED / NOT RUN** in this repository because live credentials are not stored in Git.
+
+1. Keep `LinkedIn` set to `visibility: CONNECTIONS` (or disable `LinkedIn` during initial dry runs).
+2. Click **Execute Workflow** manually in n8n and inspect every node's output.
+3. Verify `Validate & Format Post` outputs `formattedTitle`, `formattedText`, `normalizedHashtags`, and `binary.data`.
+4. Only after verifying a controlled test post and Telegram alert should you switch `visibility` to `PUBLIC` and activate the 8-hour schedule.
 
 ---
 

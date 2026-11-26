@@ -6,11 +6,17 @@ This guide is tailored for explaining **AI-Powered LinkedIn Content Automation**
 
 ## 30-Second Elevator Pitch
 
-> "I built an automated LinkedIn content pipeline in n8n that runs every 8 hours. It uses an OpenAI-backed LangChain agent to pick from 10 student-career themes and generate structured topic ideas, a second LLM chain to write the post copy and an image prompt, and then fans out in parallel—calling Google Gemini to generate a custom image while another OpenAI agent generates SEO hashtags. An n8n Merge node combines both branches, publishes the image post to LinkedIn via OAuth2, and sends me an HTML-formatted Telegram confirmation with the live post URL."
+> "I built an automated LinkedIn content pipeline in n8n that runs every 8 hours. It uses an OpenAI-backed LangChain agent to pick from 10 student-career themes and generate structured topic ideas, a second LLM chain to write the post copy and an image prompt, and then fans out in parallel—calling Google Gemini to generate a custom image while another OpenAI agent generates SEO hashtags. An n8n Merge node combines both branches, a Code validation node verifies the text and binary image and normalizes hashtags, and the LinkedIn node publishes the post via OAuth2 before sending a Telegram confirmation."
 
 ---
 
-## 2-Minute Technical Explanation
+## 1-Minute Explanation
+
+> "The pipeline is a 15-node n8n workflow organized into topic planning, parallel asset creation, validation, and publishing. A `Schedule Trigger` invokes `Content topic generator2` every 8 hours, which enforces a JSON schema via a `Structured Output Parser` to output `title`, `rationale`, and `hook`. `Content creator` expands the top topic into post copy and an image prompt, then fans out in parallel to `Gemini Image Generator` and `Hashtag generator /SEO`. A `Merge` node (`combineByPosition`) rejoins both branches, and a `Validate & Format Post` Code node verifies non-empty content and `binary.data`, strips stray `#` lines, and deduplicates hashtags case-insensitively before publishing via LinkedIn OAuth2 and alerting via Telegram."
+
+---
+
+## 3-Minute Technical Walkthrough
 
 > "The workflow is organized into three logical stages: **Plan Post Topic**, **Create Post Assets**, and **Publish and Alert Me**.
 >

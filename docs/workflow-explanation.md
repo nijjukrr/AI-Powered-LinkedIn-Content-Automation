@@ -1,6 +1,6 @@
 # Workflow Explanation & Node-by-Node Deep Dive
 
-This document provides an engineering-level breakdown of all **14 nodes** in [`workflows/linkedin_content_automation.json`](../workflows/linkedin_content_automation.json), including internal data flow, structured output contracts, parallel execution, and expression logic.
+This document provides an engineering-level breakdown of all **15 nodes** in [`workflows/linkedin_content_automation.json`](../workflows/linkedin_content_automation.json), including internal data flow, structured output contracts, parallel execution, validation, and expression logic.
 
 ---
 
@@ -121,46 +121,59 @@ This document provides an engineering-level breakdown of all **14 nodes** in [`w
 
 ### 11. `Structured Output Parser2`
 - **Type:** `@n8n/n8n-nodes-langchain.outputParserStructured` (`v1.2`)
-- **Purpose:** Enforces JSON structure containing `"Hashtags": [...]`. (Note: its `jsonSchemaExample` also includes `"post title"`, `"post content"`, and `"image description"` fields alongside `"Hashtags"`.)
+- **Purpose:** Enforces `{ "Hashtags": ["#...", "#..."] }` JSON structure without unrelated post fields.
 - **Connection:** `ai_outputParser` -> `Hashtag generator /SEO`.
 
 ---
 
 ### 12. `Merge`
 - **Type:** `n8n-nodes-base.merge` (`v3.2`)
-- **Purpose:** Synchronizes the parallel image and hashtag branches before publishing.
+- **Purpose:** Synchronizes the parallel image and hashtag branches before validation.
 - **Input Data:**
-  - Input `0`: Image binary item from `Gemini Image Generator`.
+  - Input `0`: Image binary item from `Gemini Image Generator` (`binary.data`).
   - Input `1`: Hashtags JSON item from `Hashtag generator /SEO`.
 - **Processing:** Configured with `mode: "combine"` and `combineBy: "combineByPosition"`. n8n waits until both branches complete, then merges item 0 from Input 0 with item 0 from Input 1.
-- **Output Data:** Single combined item containing both the binary image and `json.output.Hashtags`.
+- **Output Data:** Single combined item containing both `binary.data` and `json.output.Hashtags`.
+- **Next Node:** `Validate & Format Post` (`main` index 0).
+
+---
+
+### 13. `Validate & Format Post`
+- **Type:** `n8n-nodes-base.code` (`v2`)
+- **Purpose:** Acts as a deterministic pre-publish quality and binary-integrity gate.
+- **Input Data:** Merged item from `Merge` + cross-node reference to `$('Content creator').item.json.output`.
+- **Processing:**
+  - Verifies `post title` and `post content` are non-empty strings (throws an explicit error if missing).
+  - Verifies `$binary && $binary.data` exists from `Gemini Image Generator` (prevents calling `LinkedIn` without an image).
+  - Strips any accidental `#` lines from `post content`.
+  - Normalizes `Hashtags`: strips invalid characters, ensures `#` prefix, removes empty tokens, and deduplicates case-insensitively.
+- **Output Data:** `{ formattedTitle, formattedText, normalizedHashtags }` + preserved `binary`.
 - **Next Node:** `LinkedIn` (`main` index 0).
 
 ---
 
-### 13. `LinkedIn`
+### 14. `LinkedIn`
 - **Type:** `n8n-nodes-base.linkedIn` (`v1`)
-- **Purpose:** Publishes the post and image to a personal LinkedIn profile.
-- **Input Data:** Merged item from `Merge` + direct node reference to `$('Content creator').item.json.output`.
+- **Purpose:** Publishes the validated post and image to a personal LinkedIn profile.
+- **Input Data:** Validated item from `Validate & Format Post`.
 - **Processing:**
-  - **Body sanitization:** Splits `post content` by newline (`String.fromCharCode(10)`), filters out any line starting with `#`, and trims whitespace.
-  - **Hashtag normalization & deduplication:** Joins `$json.output.Hashtags`, splits on commas and spaces, trims each token, keeps tokens starting with `#`, and deduplicates using `new Set(...)`.
-  - **Media:** `shareMediaCategory: "IMAGE"` uploads the binary image from `Merge`.
-  - **Visibility:** `PUBLIC` on the configured `person` URN.
+  - Uses `={{ $json.formattedText }}` and `={{ $json.formattedTitle }}`.
+  - **Media:** `shareMediaCategory: "IMAGE"` with `binaryPropertyName: "data"`.
+  - **Visibility:** Defaults to `CONNECTIONS` for safe initial testing (switch to `PUBLIC` only after manual verification).
+  - **Retry Policy:** `retryOnFail: false` to prevent duplicate posts on ambiguous network timeouts.
 - **Output Data:** LinkedIn API response including `urn` (the published post URN).
 - **Next Node:** `Notify on Telegram` (`main` index 0).
 
 ---
 
-### 14. `Notify on Telegram`
+### 15. `Notify on Telegram`
 - **Type:** `n8n-nodes-base.telegram` (`v1.2`)
-- **Purpose:** Sends an immediate confirmation alert to the workflow owner.
-- **Input Data:** LinkedIn response (`$json.urn`) + `$('Content creator').item.json.output['post title']`.
+- **Purpose:** Sends an immediate confirmation alert (or missing-URN warning) to the workflow owner.
+- **Input Data:** LinkedIn response (`$json.urn`) + `$('Validate & Format Post').item.json.formattedTitle`.
 - **Processing:**
-  - Escapes `&`, `<`, `>` in the post title for safe `HTML` parsing.
-  - Builds `https://www.linkedin.com/feed/update/<urn>` if `$json.urn` is present.
+  - Checks `$json.urn`: only reports a published post and `https://www.linkedin.com/feed/update/<urn>` when `urn` is present; otherwise sends a warning to check LinkedIn/logs before retrying.
+  - Escapes `&`, `<`, `>` in `formattedTitle` for safe `HTML` parsing.
   - Formats `$now.setZone('Asia/Calcutta').toFormat('dd MMM yyyy, HH:mm')` IST.
-  - Disables n8n attribution (`appendAttribution: false`).
 - **Output Data:** Telegram `sendMessage` API response.
 
 ---

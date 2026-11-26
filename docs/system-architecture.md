@@ -35,12 +35,13 @@ flowchart TB
         end
     end
 
-    subgraph Merging["5. Data Merging Layer"]
+    subgraph Merging["5. Data Merging & Validation Layer"]
         MRG["Merge<br/>(n8n-nodes-base.merge v3.2)<br/>Mode: combine / combineByPosition"]
+        VAL["Validate &amp; Format Post<br/>(n8n-nodes-base.code v2)<br/>Body, Binary &amp; Hashtag Guard"]
     end
 
     subgraph Publishing["6. Publishing & Alerting Layer"]
-        LI["LinkedIn<br/>(n8n-nodes-base.linkedIn v1)<br/>shareMediaCategory: IMAGE, PUBLIC"]
+        LI["LinkedIn<br/>(n8n-nodes-base.linkedIn v1)<br/>shareMediaCategory: IMAGE, CONNECTIONS"]
         TG["Notify on Telegram<br/>(n8n-nodes-base.telegram v1.2)<br/>HTML Alert + IST Timestamp"]
     end
 
@@ -50,7 +51,8 @@ flowchart TB
     CC --> HG
     GIG -->|"index 0"| MRG
     HG -->|"index 1"| MRG
-    MRG --> LI
+    MRG --> VAL
+    VAL --> LI
     LI --> TG
 ```
 
