@@ -47,6 +47,15 @@ Unlike monolithic single-prompt scripts, this project decomposes content creatio
 
 ---
 
+## Workflow Video Demo
+
+[![Workflow Video Demo Preview](assets/demo/workflow-demo-preview.gif)](assets/demo/workflow-demo.mp4)
+
+> 🎬 **[Click to watch the full 1080p demo video (01:15)](assets/demo/workflow-demo.mp4)**  
+> *Live demonstration of the 15-node execution: scheduled trigger -> student topic research -> structured copy -> parallel Gemini image generation & SEO hashtag optimization -> deterministic Code validation gate -> LinkedIn OAuth2 publishing -> instant Telegram alert.*
+
+---
+
 ## 2. Problem Statement
 
 Maintaining a consistent, high-value presence on LinkedIn—especially for college students, fresh graduates, and early-career builders—requires:
