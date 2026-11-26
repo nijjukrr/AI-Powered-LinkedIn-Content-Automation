@@ -1,0 +1,525 @@
+{
+  "name": "Automated LinkedIn content creation with GPT-4 and DALL-E for scheduled posts",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 6
+            },
+            {
+              "triggerAtHour": 16
+            }
+          ]
+        }
+      },
+      "id": "7f5f9934-7ab8-43e9-a4cb-1583740a2e36",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        368,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate fresh LinkedIn content topics for today ({{ $now.toFormat(\"yyyy-MM-dd HH:mm\") }}).\n\nTODAY'S FOCUS THEME: {{ [\"Campus placement and recruitment pressure (how to handle it and prepare smartly)\", \"Landing internships as a student (strategies most students miss)\", \"Standing out on LinkedIn as a student (profile, personal brand, posting)\", \"Fresher job market and hiring trends (what recruiters want right now)\", \"In-demand skills and AI tools students should learn beyond the syllabus\", \"Projects, hackathons, open source and portfolios that get noticed\", \"Networking and reaching out to recruiters, seniors and alumni\", \"Resume and interview mistakes students make (and how to fix them)\", \"Peer pressure, comparison, mental health and career confusion in college\", \"Thinking differently: unconventional career paths and being unique among classmates\"][Math.floor(Math.random() * 10)] }}\n\nThe FIRST topic in your list MUST be about today's focus theme. Return them in the required JSON format.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a Content Researcher for a LinkedIn creator whose audience is college students and fresh graduates.\n\nYour task is to generate high-value content topics that help students think differently, stand out from their classmates, and navigate college, placements and early careers. These topics will later be expanded into posts by another agent.\n\n🔍 What to Focus On:\nGenerate content topics (not full content) across these themes:\n\nCampus Placements & Recruitment Pressure\n\nInternships & First Jobs\n\nStanding Out on LinkedIn as a Student (profile, personal brand, posting)\n\nFresher Job Market & Hiring Trends\n\nIn-Demand Skills & AI Tools Beyond the Syllabus\n\nProjects, Hackathons, Open Source & Portfolios\n\nNetworking with Recruiters, Seniors & Alumni\n\nResume & Interview Tips\n\nPeer Pressure, Comparison, Mental Health & Career Confusion\n\nBeing Different: Unconventional Paths & Unique Thinking\n\nThe user message names TODAY'S FOCUS THEME. The FIRST topic in your list must be about that theme. Make each topic feel fresh and specific, not generic advice students have heard a hundred times.\n\n✅ Your Output Per Topic:\nFor each idea, generate the following:\n\nTopic Title or Core Idea (1 line)\n\nShort Rationale (1–2 sentences on why this topic matters)\n\nSuggested Angle or Hook (1 LinkedIn-style framing or contrarian take)\n\n💡 Style Guide:\nKeep ideas insightful, actionable, and future-minded\n\nSpeak like a relatable senior or mentor: honest, encouraging, sharp, and slightly contrarian when it adds value\n\nAvoid hype or jargon — focus on clarity, systemized insight, and utility"
+        }
+      },
+      "id": "928e2771-ec9f-48ff-b34e-9c3ab9c4a828",
+      "name": "Content topic generator2",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        704,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5.6-luna",
+          "mode": "list",
+          "cachedResultName": "gpt-5.6-luna"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "10577345-0f96-42bf-a5db-7f9f205f7359",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        704,
+        480
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAIAPI_CREDENTIAL_ID",
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "[{\n \"title\": \"AI as Your First Content Hire: Why Founders Shouldn't Wait to Outsource Creation\",\n            \"rationale\": \"Most solopreneurs delay content scaling because they think hiring a ghostwriter is the next step — but AI can handle 80% with proper systems. This shifts content from a creative bottleneck to a scalable growth lever.\",\n            \"hook\": \"Ghostwriters are outdated. Train GPT once, and it ships LinkedIn gold in your voice daily. Welcome to hands-free thought leadership.\"\n          }]"
+      },
+      "id": "c7094a20-a96a-4db8-9ee4-95f86de800ac",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        896,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a linkedin content creator and copywriter writing for college students and fresh graduates. Write in a relatable, honest, practical tone that helps a student think differently and stand out. Given the title {{ $json.output[0].title }}, the rationale {{ $json.output[0].rationale }}, and the suggested hook {{ $json.output[0].hook }}. Generate text content for a linkedin post. Do NOT include any hashtags in the post content; hashtags are added separately. Also describe a suitable image for the post.",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "id": "84b30f40-e7fa-4c46-9a82-39bbd2becfe0",
+      "name": "Content creator",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1136,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5.6-luna",
+          "mode": "list",
+          "cachedResultName": "gpt-5.6-luna"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "6fdea8df-7cb4-4418-8dab-e5faa9e76b6b",
+      "name": "OpenAI Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1136,
+        416
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAIAPI_CREDENTIAL_ID",
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"post title\": \"Exciting New Feature Launch 🚀\",\n  \"post content\": \"After months of collaboration, testing, and fine-tuning, we're thrilled to introduce our latest product feature: Smart Insights. It helps users uncover meaningful patterns in their data with just a few clicks. This wouldn't have been possible without our incredible team and supportive community. We're excited for what's next — and we'd love your feedback!\",\n  \"image description\": \"A laptop screen showcasing the new Smart Insights dashboard with colorful charts and graphs, surrounded by a team clapping in the background.\"\n}"
+      },
+      "id": "cc1e5e3c-31de-4d1b-948b-89165fbc9769",
+      "name": "Structured Output Parser1",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1296,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3.1-flash-image",
+          "cachedResultName": "gemini-3.1-flash-image (Nano Banana 2)"
+        },
+        "prompt": "=Generate an image for a linkedin post this is the description: {{ $json.output['image description'] }} .The images should be realistic for linkedin.",
+        "options": {}
+      },
+      "id": "9a8aefa0-1579-44e6-ae1e-98318b14545c",
+      "name": "Gemini Image Generator",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        1552,
+        96
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOUR_GOOGLEPALMAPI_CREDENTIAL_ID",
+          "name": "Gateway credits",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate hashtags for the following post.\n\n<post_title>{{ $json.output['post title'] }}</post_title>\n<post_content>{{ $json.output['post content'] }}</post_content>\n\nPlease generate:\n1. **3-5 broad, high-volume hashtags** (e.g., #AI, #Marketing, #Business)\n2. **3-5 niche-specific hashtags** that are directly relevant to the post's core topic (e.g., #SocialMediaAutomation, #ContentCreationAI, #LinkedInMarketingTips)\n3. **1-2 trending/topical hashtags** if applicable (e.g., #FutureOfWork, #DigitalTransformation)\n\nPresent them as a comma-separated list.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an SEO specialist for LinkedIn. Your task is to generate highly relevant and effective hashtags for LinkedIn posts. Consider the post's content, target audience, and current LinkedIn trends to maximize visibility and engagement."
+        }
+      },
+      "id": "f3901b98-cfe4-4d48-9e35-59161cbcfdd9",
+      "name": "Hashtag generator /SEO",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1632,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5.4",
+          "mode": "list",
+          "cachedResultName": "gpt-5.4"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "f3d91646-6d7b-4270-85bc-0e4684bbd0d0",
+      "name": "OpenAI Chat Model2",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1632,
+        704
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAIAPI_CREDENTIAL_ID",
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"post title\": \"Exciting New Feature Launch 🚀\",\n  \"post content\": \"After months of collaboration, testing, and fine-tuning, we're thrilled to introduce our latest product feature: Smart Insights. It helps users uncover meaningful patterns in their data with just a few clicks. This wouldn't have been possible without our incredible team and supportive community. We're excited for what's next — and we'd love your feedback!\",\n  \"image description\": \"A laptop screen showcasing the new Smart Insights dashboard with colorful charts and graphs, surrounded by a team clapping in the background.\",\n\"Hashtags\":[\"#AI\",\"#Automation\"]\n}"
+      },
+      "id": "692b1c2e-bdc7-474e-859e-204970f512a6",
+      "name": "Structured Output Parser2",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1808,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "id": "f667d091-72aa-4bea-9648-4563a75265ff",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1984,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "person": "YOUR_LINKEDIN_PERSON_ID",
+        "text": "={{ $('Content creator').item.json.output['post content'].split(String.fromCharCode(10)).filter(l => !l.trim().startsWith('#')).join(String.fromCharCode(10)).trim() }}\n\n{{ [...new Set(($json.output.Hashtags || []).join(' ').split(',').join(' ').split(' ').map(t => t.trim()).filter(t => t.startsWith('#')))].join(' ') }}",
+        "shareMediaCategory": "IMAGE",
+        "additionalFields": {
+          "title": "={{ $('Content creator').item.json.output['post title'] }}",
+          "visibility": "PUBLIC"
+        }
+      },
+      "id": "7c3a37b7-3227-43a7-86fb-c39e885570bf",
+      "name": "LinkedIn",
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [
+        2272,
+        224
+      ],
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "YOUR_LINKEDINOAUTH2API_CREDENTIAL_ID",
+          "name": "LinkedIn account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=✅ New LinkedIn post published\n\n<b>{{ $('Content creator').item.json.output['post title'].replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;') }}</b>\n\n{{ $json.urn ? 'https://www.linkedin.com/feed/update/' + $json.urn : 'Check your LinkedIn profile for the post.' }}\n\nPosted at {{ $now.setZone('Asia/Calcutta').toFormat('dd MMM yyyy, HH:mm') }} IST",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "eb8c069b-5554-4d86-b322-66bf2ee67b78",
+      "name": "Notify on Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1984,
+        176
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAMAPI_CREDENTIAL_ID",
+          "name": "Telegram account 2"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=⚠️ LinkedIn post FAILED\n\nTitle: {{ $('Content creator').item.json.output['post title'] }}\n\nReason: {{ ($json.error && $json.error.message) || $json.error || 'Unknown error' }}\n\nTime: {{ $now.setZone('Asia/Calcutta').toFormat('dd MMM yyyy, HH:mm') }} IST",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "7c4f6d4b-bda7-4613-8871-90874172dc07",
+      "name": "Alert Post Failed",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2208,
+        416
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAMAPI_CREDENTIAL_ID",
+          "name": "Telegram account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Content topic generator2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content topic generator2": {
+      "main": [
+        [
+          {
+            "node": "Content creator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Content topic generator2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Content topic generator2",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content creator": {
+      "main": [
+        [
+          {
+            "node": "Gemini Image Generator",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Hashtag generator /SEO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Content creator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Content creator",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Image Generator": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hashtag generator /SEO": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Hashtag generator /SEO",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Hashtag generator /SEO",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Notify on Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify on Telegram": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Alert Post Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "04ae789b-c763-4079-be36-4e019465e8a5",
+  "meta": {
+    "templateId": "4968"
+  },
+  "nodeGroups": [
+    {
+      "id": "872e3fa3-f260-4f3d-b32c-10dfa3b2de4c",
+      "name": "Plan post topic",
+      "nodeIds": [
+        "928e2771-ec9f-48ff-b34e-9c3ab9c4a828",
+        "10577345-0f96-42bf-a5db-7f9f205f7359",
+        "c7094a20-a96a-4db8-9ee4-95f86de800ac"
+      ],
+      "description": "Daily at 6 AM and 4 PM IST, picks a random student-career theme and generates fresh, unique post ideas around it"
+    },
+    {
+      "id": "d1391b5e-deb1-479e-9653-b1c6f4995702",
+      "name": "Create post assets",
+      "nodeIds": [
+        "84b30f40-e7fa-4c46-9a82-39bbd2becfe0",
+        "6fdea8df-7cb4-4418-8dab-e5faa9e76b6b",
+        "cc1e5e3c-31de-4d1b-948b-89165fbc9769",
+        "9a8aefa0-1579-44e6-ae1e-98318b14545c",
+        "f3901b98-cfe4-4d48-9e35-59161cbcfdd9",
+        "f3d91646-6d7b-4270-85bc-0e4684bbd0d0",
+        "692b1c2e-bdc7-474e-859e-204970f512a6",
+        "f667d091-72aa-4bea-9648-4563a75265ff"
+      ],
+      "description": "Writes the post copy, generates a matching image and SEO hashtags, then joins them into one post"
+    },
+    {
+      "id": "767c44ee-9467-4e45-b040-71c48680084a",
+      "name": "Publish and alert me",
+      "nodeIds": [
+        "7c3a37b7-3227-43a7-86fb-c39e885570bf",
+        "eb8c069b-5554-4d86-b322-66bf2ee67b78",
+        "7c4f6d4b-bda7-4613-8871-90874172dc07"
+      ],
+      "description": "Posts publicly on your personal profile, then messages your phone with the link, or with the reason if posting failed"
+    }
+  ],
+  "tags": []
+}
