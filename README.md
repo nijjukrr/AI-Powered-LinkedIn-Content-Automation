@@ -81,7 +81,7 @@ The workflow implements a three-group pipeline (`nodeGroups` in the n8n export):
    - **Gemini Image Generator** (creates a realistic LinkedIn visual from `image description`).
    - **Hashtag generator /SEO** (generates broad, niche, and trending hashtags).
    - A **Merge** node (`combineByPosition`) joins the image binary/metadata and hashtag JSON into a single item.
-3. **Publish and Alert Me:** **LinkedIn** strips any accidental inline hashtags from the body, deduplicates and appends the generated hashtags, and publishes an `IMAGE` post with `PUBLIC` visibility. **Notify on Telegram** then sends an HTML-formatted confirmation message with the live post URL.
+3. **Publish and Alert Me:** **Validate & Format Post** verifies non-empty content and binary image data, strips any accidental inline hashtags from the body, and deduplicates/normalizes hashtags. **LinkedIn** publishes an `IMAGE` post with `CONNECTIONS` visibility by default for safe initial verification. **Notify on Telegram** then sends an HTML-formatted confirmation message with the live post URL (or a warning if no URN was returned).
 
 ---
 
@@ -109,7 +109,7 @@ The workflow implements a three-group pipeline (`nodeGroups` in the n8n export):
 | **SEO / Hashtags** | LangChain AI Agent + OpenAI | `@n8n/n8n-nodes-langchain.agent` (`v3.1`) + `lmChatOpenAi` (`v1.3`) | `gpt-5.4` |
 | **Schema Validation** | Structured Output Parser | `@n8n/n8n-nodes-langchain.outputParserStructured` (`v1.2`) | JSON Schema examples (3 parsers) |
 | **Data Merging** | n8n Merge Node | `n8n-nodes-base.merge` (`v3.2`) | `mode: combine`, `combineByPosition` |
-| **Publishing** | LinkedIn API (OAuth2) | `n8n-nodes-base.linkedIn` (`v1`) | `shareMediaCategory: IMAGE`, `visibility: PUBLIC` |
+| **Publishing** | LinkedIn API (OAuth2) | `n8n-nodes-base.linkedIn` (`v1`) | `shareMediaCategory: IMAGE`, `visibility: CONNECTIONS` (default) |
 | **Alerting** | Telegram Bot API | `n8n-nodes-base.telegram` (`v1.2`) | `parse_mode: HTML`, `Asia/Calcutta` |
 
 ---
@@ -179,7 +179,7 @@ For a layer-by-layer breakdown (implemented vs. proposed), see [`docs/system-arc
 | 8 | **Gemini Image Generator** | `googleGemini` | Generates a realistic image from `image description` using `gemini-3.1-flash-image`. |
 | 9 | **Hashtag generator /SEO** | `agent` | Generates categorized broad, niche, and trending hashtags. |
 | 10 | **OpenAI Chat Model2** | `lmChatOpenAi` | Language model (`gpt-5.4`) backing `Hashtag generator /SEO`. |
-| 11 | **Structured Output Parser2** | `outputParserStructured` | Enforces `{ "post title", "post content", "image description", "Hashtags": [...] }`. |
+| 11 | **Structured Output Parser2** | `outputParserStructured` | Enforces `{ "Hashtags": ["#...", "#..."] }` schema without unrelated post fields. |
 | 12 | **Merge** | `merge` | Combines the Gemini image output (index 0) and Hashtag JSON (index 1) by position. |
 | 13 | **Validate & Format Post** | `code` | Validates title, body, and `binary.data`; normalizes and deduplicates hashtags. |
 | 14 | **LinkedIn** | `linkedIn` | Publishes the validated `IMAGE` post via OAuth2 (`CONNECTIONS` by default). |
@@ -221,7 +221,7 @@ See [`docs/installation-guide.md`](docs/installation-guide.md) for the full step
 1. In the n8n UI, click **+ Add workflow** (or open an existing empty workflow).
 2. Click the **⋮** (three dots) menu in the top-right corner and select **Import from File...**.
 3. Select [`workflows/linkedin_content_automation.json`](workflows/linkedin_content_automation.json).
-4. Review the imported canvas—all 14 nodes and 3 node groups (*Plan post topic*, *Create post assets*, *Publish and alert me*) will appear.
+4. Review the imported canvas—all 15 nodes and 3 node groups (*Plan post topic*, *Create post assets*, *Publish and alert me*) will appear.
 5. Replace all placeholder values (`YOUR_LINKEDIN_PERSON_ID`, `YOUR_TELEGRAM_CHAT_ID`, etc.) and bind your own n8n credentials before activating.
 
 ---
@@ -247,7 +247,7 @@ Detailed API setup and rate-limit notes are documented in [`docs/api-integration
 2. Under **Products**, request access to **Share on LinkedIn** and **Sign In with LinkedIn using OpenID Connect**.
 3. Copy the **OAuth 2.0 Redirect URL** from your n8n `LinkedIn OAuth2 API` credential screen and add it to your LinkedIn App's **Auth** settings.
 4. Connect your LinkedIn account in n8n and select your personal profile in the `LinkedIn` node (`person` parameter, replacing `YOUR_LINKEDIN_PERSON_ID`).
-5. Keep `shareMediaCategory` set to `IMAGE` and `visibility` set to `PUBLIC` (or `CONNECTIONS` while testing).
+5. Keep `shareMediaCategory` set to `IMAGE` and `visibility` set to `CONNECTIONS` while testing (switch to `PUBLIC` only after verifying end-to-end execution).
 
 ---
 
@@ -274,6 +274,10 @@ Visual documentation and workflow/execution screenshot guidelines are located in
 ### Offline Automated Tests (No API Credentials Required)
 
 ```bash
+# Run direct Node.js unit tests on Code node logic
+node --test tests/test_validate_post.test.js
+
+# Run workflow structural, schema, security, and link tests
 python -m unittest discover -s tests -v
 ```
 

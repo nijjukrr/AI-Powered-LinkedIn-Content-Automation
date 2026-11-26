@@ -77,6 +77,7 @@ The imported workflow is **inactive (`active: false`)** and sets LinkedIn visibi
 
 1. **Run Offline Automated Tests Locally:**
    ```bash
+   node --test tests/test_validate_post.test.js
    python -m unittest discover -s tests -v
    ```
 2. **Disable `LinkedIn` Temporarily** (optional for initial dry runs) and click **Execute Workflow** manually in n8n.
