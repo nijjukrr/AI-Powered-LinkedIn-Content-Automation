@@ -23,17 +23,18 @@
 7. [System Architecture](#7-system-architecture)
 8. [Workflow Execution Sequence](#8-workflow-execution-sequence)
 9. [Detailed Node Explanation](#9-detailed-node-explanation)
-10. [Installation Instructions](#10-installation-instructions)
-11. [n8n Workflow Import Instructions](#11-n8n-workflow-import-instructions)
-12. [API Credential Configuration](#12-api-credential-configuration)
-13. [LinkedIn Integration Instructions](#13-linkedin-integration-instructions)
-14. [Example Workflow Input and Output](#14-example-workflow-input-and-output)
-15. [Screenshots](#15-screenshots)
-16. [Testing and Verification Instructions](#16-testing-and-verification-instructions)
-17. [Limitations](#17-limitations)
-18. [Future Improvements](#18-future-improvements)
-19. [Interview & Engineering Deep Dive](#19-interview--engineering-deep-dive)
-20. [Author Information](#20-author-information)
+10. [Beginner User Guide](#10-beginner-user-guide)
+11. [Installation Instructions](#11-installation-instructions)
+12. [n8n Workflow Import Instructions](#12-n8n-workflow-import-instructions)
+13. [API Credential Configuration](#13-api-credential-configuration)
+14. [LinkedIn Integration Instructions](#14-linkedin-integration-instructions)
+15. [Example Workflow Input and Output](#15-example-workflow-input-and-output)
+16. [Screenshots](#16-screenshots)
+17. [Testing and Verification Instructions](#17-testing-and-verification-instructions)
+18. [Limitations](#18-limitations)
+19. [Future Improvements](#19-future-improvements)
+20. [Interview & Engineering Deep Dive](#20-interview--engineering-deep-dive)
+21. [Author Information](#21-author-information)
 
 ---
 
@@ -198,7 +199,11 @@ For complete input/output schemas, expressions, and internal mechanics, see [`do
 
 ---
 
-## 10. Installation Instructions
+## 10. Beginner User Guide
+
+New to n8n or this project? Start with the **[Beginner-Friendly User Guide](docs/user-guide.md)**. It walks you through prerequisites, importing the workflow, configuring AI/Gemini/LinkedIn/Telegram credentials, using eligible n8n Gateway credits, testing, activation, and troubleshooting. It also explains the limits of trial credits and alternatives when you need your own API keys.
+
+## 11. Installation Instructions
 
 1. **Clone the repository:**
    ```bash
