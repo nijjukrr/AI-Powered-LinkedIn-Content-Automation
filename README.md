@@ -230,7 +230,7 @@ See [`docs/installation-guide.md`](docs/installation-guide.md) for the full step
 
 ---
 
-## 11. n8n Workflow Import Instructions
+## 12. n8n Workflow Import Instructions
 
 1. In the n8n UI, click **+ Add workflow** (or open an existing empty workflow).
 2. Click the **⋮** (three dots) menu in the top-right corner and select **Import from File...**.
@@ -240,7 +240,7 @@ See [`docs/installation-guide.md`](docs/installation-guide.md) for the full step
 
 ---
 
-## 12. API Credential Configuration
+## 13. API Credential Configuration
 
 You must configure four credential connections inside n8n's **Credentials** manager (do **not** hardcode keys in workflow JSON):
 
@@ -255,7 +255,7 @@ Detailed API setup and rate-limit notes are documented in [`docs/api-integration
 
 ---
 
-## 13. LinkedIn Integration Instructions
+## 14. LinkedIn Integration Instructions
 
 1. Create an application in the [LinkedIn Developer Portal](https://www.linkedin.com/developers/apps).
 2. Under **Products**, request access to **Share on LinkedIn** and **Sign In with LinkedIn using OpenID Connect**.
@@ -265,7 +265,7 @@ Detailed API setup and rate-limit notes are documented in [`docs/api-integration
 
 ---
 
-## 14. Example Workflow Input and Output
+## 15. Example Workflow Input and Output
 
 Illustrative schema-compliant examples (matching the exact `Structured Output Parser` definitions in the workflow) are provided in [`examples/`](examples/):
 
@@ -277,13 +277,13 @@ Illustrative schema-compliant examples (matching the exact `Structured Output Pa
 
 ---
 
-## 15. Screenshots
+## 16. Screenshots
 
 Visual documentation and workflow/execution screenshot guidelines are located in [`screenshots/README.md`](screenshots/README.md). Add your own exported n8n canvas and execution screenshots there after running the workflow in your n8n environment.
 
 ---
 
-## 16. Testing and Verification Instructions
+## 17. Testing and Verification Instructions
 
 ### Offline Automated Tests (No API Credentials Required)
 
@@ -299,7 +299,7 @@ This suite validates workflow JSON syntax, all 15 required nodes, connections, i
 
 ### Manual n8n Verification (Requires Live Credentials)
 
-> **Status:** Live end-to-end API execution is **UNVERIFIED / NOT RUN** in this repository because live credentials are not stored in Git.
+> **Status:** The maintainer reports that the deployed workflow is in active use and has been tested end to end, including LinkedIn publishing and Telegram notification. Repository CI tests are offline checks and cannot independently exercise private API credentials.
 
 1. Keep `LinkedIn` set to `visibility: CONNECTIONS` (or disable `LinkedIn` during initial dry runs).
 2. Click **Execute Workflow** manually in n8n and inspect every node's output.
@@ -308,17 +308,17 @@ This suite validates workflow JSON syntax, all 15 required nodes, connections, i
 
 ---
 
-## 17. Limitations
+## 18. Limitations
 
-- **No Human-in-the-Loop Approval:** Posts are published directly to LinkedIn (`visibility: PUBLIC`) without a review gate.
+- **No Human-in-the-Loop Approval:** The workflow is designed for automatic publishing without a manual approval gate. Users who prefer direct automation can keep this behaviour; review the post visibility setting in their own n8n instance.
 - **Single-Topic Consumption:** `Content creator` hardcodes `$json.output[0]`, ignoring any additional topic ideas returned in the array.
-- **No Duplicate-Content Guard:** Because themes are picked via `Math.random()`, the same theme or similar topic can be generated on consecutive runs.
-- **No Error/Retry Workflow:** There is no `Error Trigger` node, fallback image handling, or retry policy if OpenAI, Gemini, or LinkedIn APIs return 429/5xx errors.
+- **No Duplicate-Content Guard:** Topic selection is randomized, but previous topics/posts are not stored for duplicate detection. This is an intentional simplicity trade-off in the current version.
+- **Error Handling Scope:** The workflow does not include a centralized Error Trigger or fallback-image path. Gemini has bounded retry settings in the revised template; LinkedIn retries are disabled to reduce the risk of duplicate posts after an uncertain request outcome.
 - **Model Availability:** The exported workflow references `gpt-5.6-luna`, `gpt-5.4`, and `models/gemini-3.1-flash-image` via n8n AI Gateway; users without AI Gateway credits must select equivalent models available on their API keys.
 
 ---
 
-## 18. Future Improvements
+## 19. Future Improvements
 
 - Add a Telegram/Slack **Human Approval** step before `LinkedIn` publishing.
 - Store generated topics and post hashes in PostgreSQL, Notion, or Google Sheets to **prevent duplicate topics**.
@@ -330,13 +330,13 @@ See [`docs/future-enhancements.md`](docs/future-enhancements.md) for the priorit
 
 ---
 
-## 19. Interview & Engineering Deep Dive
+## 20. Interview & Engineering Deep Dive
 
 For technical interview preparation—including 30-second and 2-minute pitches, architectural trade-offs, and 20 technical Q&As grounded in this exact implementation—see [`docs/interview-preparation.md`](docs/interview-preparation.md).
 
 ---
 
-## 20. Author Information
+## 21. Author Information
 
 - **Author:** [nijjukrr](https://github.com/nijjukrr)
 - **Repository:** [AI-Powered-LinkedIn-Content-Automation](https://github.com/nijjukrr/AI-Powered-LinkedIn-Content-Automation)
