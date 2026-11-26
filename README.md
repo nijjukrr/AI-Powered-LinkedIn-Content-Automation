@@ -33,8 +33,7 @@
 17. [Limitations](#17-limitations)
 18. [Future Improvements](#18-future-improvements)
 19. [Interview & Engineering Deep Dive](#19-interview--engineering-deep-dive)
-20. [Video Walkthrough Guide](#20-video-walkthrough-guide)
-21. [Author Information](#21-author-information)
+20. [Author Information](#20-author-information)
 
 ---
 
@@ -45,15 +44,6 @@
 Unlike monolithic single-prompt scripts, this project decomposes content creation into specialized AI agents and LangChain chains connected via **Structured Output Parsers**. This ensures deterministic JSON contracts between stages, enables parallel execution for visual and SEO asset generation, and cleanly assembles the final payload for the LinkedIn OAuth2 API.
 
 > **Note on Workflow Naming:** The original n8n export carries the legacy title *"Automated LinkedIn content creation with GPT-4 and DALL-E for scheduled posts"*, which reflects the original template name (`templateId: 4968`). In the actual exported implementation (`workflows/linkedin_content_automation.json`), the pipeline uses **OpenAI Chat Model** nodes (`gpt-5.6-luna` and `gpt-5.4`), **Google Gemini** (`models/gemini-3.1-flash-image` / Nano Banana 2) for image generation, and **Telegram** for post-publish alerts.
-
----
-
-## Workflow Execution Walkthrough
-
-![AI-Powered LinkedIn Content Automation Execution Demo](assets/demo/workflow-walkthrough.gif)
-
-> *Animated walkthrough illustrating the 15-node execution pipeline: Schedule Trigger -> Topic Generation -> Copywriting -> Parallel Gemini Image & SEO Hashtags -> Code Validation Gate -> LinkedIn Publishing -> Telegram Confirmation Alert.*  
-> *For scene-by-scene recording scripts and video presentation tips, see [`docs/video-presentation-guide.md`](docs/video-presentation-guide.md).*
 
 ---
 
