@@ -1,0 +1,8 @@
+{
+  "_note": "Illustrative schema-compliant example matching Structured Output Parser1 in Content creator (not a claimed live execution log).",
+  "output": {
+    "post title": "One Real Project Beats Five Tutorial Clones",
+    "post content": "Stop adding tutorial clones to your GitHub.\n\nWhen recruiters scan student portfolios, they recognize standard tutorial projects in seconds.\n\nWhat actually stands out in an internship interview?\n1. A problem you picked yourself\n2. Trade-offs you had to make (cost, latency, error handling)\n3. Clear documentation explaining how it works and what still needs improvement\n\nYou don't need 15 repositories. You need 2 or 3 projects you can explain deeply for 10 minutes straight.\n\nWhat is the one project on your resume you're most proud of explaining?",
+    "image description": "A realistic workspace desk with a laptop showing a system architecture diagram and clean code editor, warm natural lighting, notebook and pen beside the keyboard, modern minimal aesthetic suitable for a LinkedIn tech post."
+  }
+}

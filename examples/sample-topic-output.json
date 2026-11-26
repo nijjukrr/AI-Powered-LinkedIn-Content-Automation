@@ -1,0 +1,10 @@
+{
+  "_note": "Illustrative schema-compliant example matching Structured Output Parser in Content topic generator2 (not a claimed live execution log).",
+  "output": [
+    {
+      "title": "Why Building One Real End-to-End Project Beats Five Tutorial Clones",
+      "rationale": "Recruiters see hundreds of identical weather apps and to-do lists on fresher resumes. Demonstrating one deployed, well-documented project shows engineering judgment and ownership.",
+      "hook": "Stop adding tutorial clones to your GitHub. One messy, real-world project you actually debugged will outscore ten polished copy-paste repos in an internship interview."
+    }
+  ]
+}
