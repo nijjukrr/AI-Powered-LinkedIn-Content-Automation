@@ -16,6 +16,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -27,6 +32,9 @@ jobs:
           python -m json.tool examples/sample-topic-output.json > /dev/null
           python -m json.tool examples/sample-post-output.json > /dev/null
           python -m json.tool examples/sample-hashtag-output.json > /dev/null
+
+      - name: Run direct Node.js unit tests on Code node logic
+        run: node --test tests/test_validate_post.test.js
 
       - name: Run automated workflow, schema, security, and link tests
         run: python -m unittest discover -s tests -v
